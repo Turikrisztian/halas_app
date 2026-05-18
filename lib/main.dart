@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart'; // Magyar dátumokhoz
 import 'screens/dashboard_screen.dart';
 import 'screens/catches_log_screen.dart';
 import 'screens/fishing_spots_screen.dart';
+import 'screens/extra_menu_screen.dart';
 import 'providers/fishing_provider.dart';
 import 'screens/add_catch_screen.dart';
 import 'screens/add_fishing_spot_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Magyar nyelvű dátumformázás inicializálása
+  await initializeDateFormatting('hu_HU', null);
+  
   runApp(
     MultiProvider(
       providers: [
@@ -25,25 +31,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Kapásjelző - Halas App',
+      title: 'Kapásjelző',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-          primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFF0277BD),
-        ),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1B5E20),
+          primary: const Color(0xFF1B5E20),
+          secondary: const Color(0xFFFF9100),
+          surface: Colors.white,
+          onPrimary: Colors.white,
+          brightness: Brightness.light,
+        ),
         textTheme: const TextTheme(
-          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          bodyLarge: TextStyle(fontSize: 20),
-          bodyMedium: TextStyle(fontSize: 18),
+          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
+          titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
+          bodyLarge: TextStyle(fontSize: 20, color: Colors.black87),
+          bodyMedium: TextStyle(fontSize: 16, color: Colors.black54),
         ),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
-          elevation: 2,
-          titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          titleTextStyle: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1B5E20)),
         ),
       ),
       home: const MainNavigationScreen(),
@@ -65,101 +75,121 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const DashboardScreen(),
     const CatchesLogScreen(),
     const FishingSpotsScreen(),
+    const ExtraMenuScreen(),
   ];
 
-  final List<String> _titles = [
-    'Főoldal',
-    'Fogási Napló',
-    'Horgászhelyek',
-  ];
+  final List<String> _titles = ['Főoldal', 'Fogási Napló', 'Horgászhelyek', 'Extra Funkciók'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Content flows behind the floating navigation bar
+      extendBody: true,
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
       ),
       body: Consumer<FishingProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          if (provider.isLoading) return const Center(child: CircularProgressIndicator());
           return _screens[_selectedIndex];
         },
       ),
-      floatingActionButton: _buildFab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(35),
-          child: NavigationBar(
-            height: 70,
-            elevation: 0,
-            backgroundColor: Colors.white,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            // Material 3 indicator (the pill background) styling
-            indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-            indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.dashboard_rounded, size: 28),
-                selectedIcon: Icon(Icons.dashboard_rounded, size: 28, color: Color(0xFF2E7D32)),
-                label: 'Főoldal',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.auto_stories_rounded, size: 28),
-                selectedIcon: Icon(Icons.auto_stories_rounded, size: 28, color: Color(0xFF2E7D32)),
-                label: 'Napló',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.location_on_rounded, size: 28),
-                selectedIcon: Icon(Icons.location_on_rounded, size: 28, color: Color(0xFF2E7D32)),
-                label: 'Helyek',
-              ),
-            ],
+      bottomNavigationBar: _buildModernNavbar(),
+    );
+  }
+
+  Widget _buildModernNavbar() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 25),
+      height: 85,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-        ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _navbarItem(0, Icons.dashboard_rounded, 'Főoldal'),
+          _navbarItem(1, Icons.auto_stories_rounded, 'Napló'),
+          _buildCenterAddButton(),
+          _navbarItem(2, Icons.location_on_rounded, 'Helyek'),
+          _navbarItem(3, Icons.more_horiz_rounded, 'Extra'),
+        ],
       ),
     );
   }
 
-  Widget? _buildFab() {
-    if (_selectedIndex == 0) return null;
+  Widget _navbarItem(int index, IconData icon, String label) {
+    bool isSelected = _selectedIndex == index;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Padding(
-      // Push FAB higher so it doesn't overlap with the floating bottom bar
-      padding: const EdgeInsets.only(bottom: 100.0),
-      child: FloatingActionButton.large(
-        onPressed: () {
-          if (_selectedIndex == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddCatchScreen()));
-          } else {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddFishingSpotScreen()));
-          }
-        },
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        child: Icon(_selectedIndex == 1 ? Icons.add : Icons.add_location, size: 40),
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? primaryColor.withValues(alpha: 0.15) : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+                icon,
+                color: isSelected ? primaryColor : Colors.grey[500],
+                size: 28
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+              label,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? primaryColor : Colors.grey[500]
+              )
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCenterAddButton() {
+    final secondaryColor = Theme.of(context).colorScheme.secondary;
+
+    return GestureDetector(
+      onTap: () {
+        if (_selectedIndex == 2) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddFishingSpotScreen()));
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddCatchScreen()));
+        }
+      },
+      child: Container(
+        height: 65,
+        width: 65,
+        transform: Matrix4.translationValues(0, -5, 0),
+        decoration: BoxDecoration(
+          color: secondaryColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: secondaryColor.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 40),
       ),
     );
   }

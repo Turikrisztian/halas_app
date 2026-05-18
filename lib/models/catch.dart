@@ -4,6 +4,7 @@ class Catch {
   final double weight;
   final double length;
   final String bait;
+  final int? baitRecipeId; // Új mező a csalireceptekhez
   final DateTime dateTime;
   final String? photoPath;
   final String notes;
@@ -15,6 +16,7 @@ class Catch {
     required this.weight,
     required this.length,
     required this.bait,
+    this.baitRecipeId,
     required this.dateTime,
     this.photoPath,
     this.notes = '',
@@ -28,6 +30,7 @@ class Catch {
       'weight': weight,
       'length': length,
       'bait': bait,
+      'baitRecipeId': baitRecipeId,
       'dateTime': dateTime.toIso8601String(),
       'photoPath': photoPath,
       'notes': notes,
@@ -42,6 +45,7 @@ class Catch {
       weight: map['weight'],
       length: map['length'],
       bait: map['bait'],
+      baitRecipeId: map['baitRecipeId'],
       dateTime: DateTime.parse(map['dateTime']),
       photoPath: map['photoPath'],
       notes: map['notes'] ?? '',
